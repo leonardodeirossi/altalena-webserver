@@ -1,0 +1,52 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apache2-php8.2
+    ports:
+      - "80:80"
+    volumes:
+      - ./htdocs:/var/www/html
+    depends_on:
+      - db
+      - phpmyadmin
+    networks:
+      - lamp
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_HOST: '%'
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - lamp
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin-latest
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      - db
+    networks:
+      - lamp
+
+volumes:
+  db_data:
+
+networks:
+  lamp:
+
