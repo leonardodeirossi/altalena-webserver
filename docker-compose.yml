@@ -1,52 +1,55 @@
-services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: apache2-php8.2
-    ports:
-      - "80:80"
-    volumes:
-      - ./htdocs:/var/www/html
-    depends_on:
-      - db
-      - phpmyadmin
-    networks:
-      - lamp
 
-  db:
+services:
+  mysql:
     image: mysql:8.0
-    container_name: mysql-8.0
-    restart: always
+    container_name: altalena_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: mydb
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_HOST: '%'
-    volumes:
-      - db_data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: rootpassword # Sostituisci con una password forte
+      MYSQL_ROOT_HOST: "%"
     networks:
-      - lamp
+      altalena_net:
+        aliases:
+          - mysql.altalena.local
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: phpmyadmin-latest
-    restart: always
-    ports:
-      - "8081:80"
+    container_name: altalena_phpmyadmin
     environment:
-      PMA_HOST: db
+      PMA_HOST: mysql.altalena.local
       PMA_USER: root
-      PMA_PASSWORD: root
-    depends_on:
-      - db
+      PMA_PASSWORD: rootpassword
     networks:
-      - lamp
+      altalena_net:
+        aliases:
+          - phpmyadmin.altalena.local
+    restart: unless-stopped
+    # Non esponiamo porte sul PC host, ci penserà Apache a fare da proxy
 
-volumes:
-  db_data:
+  apache_php:
+    build:
+      context: ./apache
+    container_name: altalena_apache
+    ports:
+      - "80:80"
+    networks:
+      altalena_net:
+        aliases:
+          - apache.altalena.local
+    volumes:
+      - ./htdocs:/var/www/html
+      - ./apache/vhosts.conf:/etc/apache2/sites-available/000-default.conf
+    depends_on:
+      - mysql
+      - phpmyadmin
+    restart: unless-stopped
 
 networks:
-  lamp:
+  altalena_net:
+    name: altalena_network
+
+volumes:
+  mysql_data:
 
